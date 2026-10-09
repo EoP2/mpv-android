@@ -27,51 +27,8 @@
             android:layout_marginTop="60dp"
             android:layout_marginRight="24dp"
             android:layout_marginBottom="60dp"
-            android:background="#bf000000"
+            android:background="@android:color/transparent"
             android:orientation="vertical">
-
-            <LinearLayout
-                android:id="@+id/controls_title_group"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:orientation="vertical"
-                android:visibility="gone"
-                tools:visibility="visible">
-
-                <!-- These two are only used for audio -->
-                <TextView
-                    android:id="@+id/titleTextView"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:gravity="center"
-                    android:textColor="@color/tint_normal"
-                    android:textSize="24sp"
-                    android:visibility="gone"
-                    tools:text="Song Title" />
-
-                <TextView
-                    android:id="@+id/minorTitleTextView"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:gravity="center"
-                    android:textColor="@color/tint_normal"
-                    android:textSize="14sp"
-                    android:visibility="gone"
-                    tools:text="Artist / Album" />
-
-                <!-- This one for video title display -->
-                <TextView
-                    android:id="@+id/fullTitleTextView"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:ellipsize="middle"
-                    android:gravity="center"
-                    android:singleLine="true"
-                    android:textColor="@color/tint_normal"
-                    android:textSize="16sp"
-                    tools:text="Video Title" />
-
-            </LinearLayout>
 
             <LinearLayout
                 android:id="@+id/controls_seekbar_group"
@@ -186,9 +143,10 @@
             android:id="@+id/statsTextView"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_below="@id/top_controls"
             android:layout_alignParentStart="true"
-            android:layout_alignParentTop="true"
             android:layout_marginStart="16dp"
+            android:layout_marginTop="4dp"
             android:shadowColor="#000000"
             android:shadowDx="1"
             android:shadowDy="1"
@@ -220,31 +178,81 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_alignParentTop="true"
-            android:layout_alignParentEnd="true"
             android:alpha="0.5"
-            android:background="#bf000000"
+            android:background="@android:color/transparent"
+            android:gravity="end|center_vertical"
             android:orientation="horizontal">
+
+            <LinearLayout
+                android:id="@+id/controls_title_group"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="12dp"
+                android:layout_marginEnd="8dp"
+                android:layout_weight="1"
+                android:orientation="vertical"
+                android:visibility="gone"
+                tools:visibility="visible">
+
+                <!-- These two are only used for audio -->
+                <TextView
+                    android:id="@+id/titleTextView"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:ellipsize="end"
+                    android:gravity="start"
+                    android:singleLine="true"
+                    android:textColor="@color/tint_normal"
+                    android:textSize="16sp"
+                    android:visibility="gone"
+                    tools:text="Song Title" />
+
+                <TextView
+                    android:id="@+id/minorTitleTextView"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:ellipsize="end"
+                    android:gravity="start"
+                    android:singleLine="true"
+                    android:textColor="@color/tint_normal"
+                    android:textSize="12sp"
+                    android:visibility="gone"
+                    tools:text="Artist / Album" />
+
+                <!-- This one for video title display -->
+                <TextView
+                    android:id="@+id/fullTitleTextView"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:ellipsize="middle"
+                    android:gravity="start"
+                    android:singleLine="true"
+                    android:textColor="@color/tint_normal"
+                    android:textSize="16sp"
+                    tools:text="Video Title" />
+
+            </LinearLayout>
+
+            <Button
+                android:id="@+id/cycleSpeedBtn"
+                style="?buttonBarButtonStyle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:minWidth="48dp"
+                android:minHeight="40dp"
+                android:textColor="@android:color/white"
+                android:textSize="14sp"
+                tools:text="1.00X" />
 
             <ImageButton
                 android:id="@+id/cycleAudioBtn"
                 style="?buttonBarButtonStyle"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:minWidth="40dp"
+                android:minWidth="48dp"
                 android:minHeight="40dp"
                 android:padding="4dp"
                 app:srcCompat="@drawable/ic_audiotrack_black_24dp"
-                app:tint="@color/tint_normal" />
-
-            <ImageButton
-                android:id="@+id/cycleSubsBtn"
-                style="?buttonBarButtonStyle"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:minWidth="40dp"
-                android:minHeight="40dp"
-                android:padding="4dp"
-                app:srcCompat="@drawable/ic_subtitles_black_24dp"
                 app:tint="@color/tint_normal" />
 
             <Button
@@ -252,33 +260,29 @@
                 style="?buttonBarButtonStyle"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:minWidth="0dp"
+                android:minWidth="48dp"
                 android:minHeight="40dp"
-                android:paddingStart="6dp"
-                android:paddingEnd="6dp"
                 android:textColor="@android:color/white"
                 android:textSize="14sp"
                 tools:text="HW+" />
 
-            <Button
-                android:id="@+id/cycleSpeedBtn"
+            <ImageButton
+                android:id="@+id/cycleSubsBtn"
                 style="?buttonBarButtonStyle"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:minWidth="0dp"
+                android:minWidth="48dp"
                 android:minHeight="40dp"
-                android:paddingStart="6dp"
-                android:paddingEnd="6dp"
-                android:textColor="@android:color/white"
-                android:textSize="14sp"
-                tools:text="1.00X" />
+                android:padding="4dp"
+                app:srcCompat="@drawable/ic_subtitles_black_24dp"
+                app:tint="@color/tint_normal" />
 
             <ImageButton
                 android:id="@+id/topMenuBtn"
                 style="?buttonBarButtonStyle"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:minWidth="40dp"
+                android:minWidth="48dp"
                 android:minHeight="40dp"
                 android:padding="4dp"
                 app:srcCompat="@drawable/ic_settings_black_24dp"
