@@ -855,7 +855,8 @@ class MPVActivity : AppCompatActivity(), MPVLib.EventObserver, TouchGesturesObse
      * Returns views eligible for dpad button navigation
      */
     private fun dpadButtons(): Sequence<View> {
-        val groups = arrayOf(binding.controlsButtonGroup, binding.topControls)
+        val groups = arrayOf<ViewGroup>(
+            binding.controlsButtonGroup, binding.controlsButtonRow, binding.topControls)
         return sequence {
             for (g in groups) {
                 for (i in 0 until g.childCount) {
@@ -1631,10 +1632,9 @@ class MPVActivity : AppCompatActivity(), MPVLib.EventObserver, TouchGesturesObse
     }
 
     private fun updateAudioUI() {
-        val audioButtons = arrayOf(R.id.prevBtn, R.id.cycleAudioBtn, R.id.playBtn,
-                R.id.cycleSpeedBtn, R.id.nextBtn)
-        val videoButtons = arrayOf(R.id.cycleAudioBtn, R.id.cycleSubsBtn, R.id.playBtn,
-                R.id.cycleDecoderBtn, R.id.cycleSpeedBtn)
+        val audioButtons = arrayOf(R.id.prevBtn, R.id.playBtn, R.id.nextBtn)
+        val videoButtons = arrayOf(R.id.playBtn)
+        val videoOnlyTopButtons = arrayOf<View>(binding.cycleSubsBtn, binding.cycleDecoderBtn)
 
         val shouldUseAudioUI = isPlayingAudioOnly()
         if (shouldUseAudioUI == useAudioUI)
@@ -1652,6 +1652,7 @@ class MPVActivity : AppCompatActivity(), MPVLib.EventObserver, TouchGesturesObse
 
             // Change button layout of buttons group
             Utils.viewGroupReorder(buttonGroup, audioButtons)
+            videoOnlyTopButtons.forEach { it.visibility = View.GONE }
 
             // Show song title and more metadata
             binding.controlsTitleGroup.visibility = View.VISIBLE
@@ -1664,6 +1665,7 @@ class MPVActivity : AppCompatActivity(), MPVLib.EventObserver, TouchGesturesObse
             Utils.viewGroupMove(buttonGroup, R.id.nextBtn, seekbarGroup, -1)
 
             Utils.viewGroupReorder(buttonGroup, videoButtons)
+            videoOnlyTopButtons.forEach { it.visibility = View.VISIBLE }
 
             // Show title only depending on settings
             if (showMediaTitle) {
