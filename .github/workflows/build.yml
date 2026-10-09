@@ -51,3 +51,13 @@ jobs:
           name: mpv-android-arm64-v8a
           path: app/build/outputs/apk/default/debug/app-default-arm64-v8a-debug.apk
           archive: false
+
+      - uses: actions/upload-artifact@v7
+        with:
+          path: app/build/outputs/apk/default/release/app-default-armeabi-v7a-release-unsigned.apk
+          archive: false
+
+      - uses: actions/upload-artifact@v7
+        with:
+          path: app/build/outputs/apk/default/release/app-default-arm64-v8a-release-unsigned.apk
+          archive: false
