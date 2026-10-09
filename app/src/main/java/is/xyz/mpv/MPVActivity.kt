@@ -741,7 +741,7 @@ class MPVActivity : AppCompatActivity(), MPVLib.EventObserver, TouchGesturesObse
         }
 
         // add a new callback to hide the controls once again
-        if (!controlsShouldBeVisible())
+        if (!controlsShouldBeVisible() && !psc.pause)
             fadeHandler.postDelayed(fadeRunnable, CONTROLS_DISPLAY_TIMEOUT)
     }
 
@@ -841,7 +841,12 @@ class MPVActivity : AppCompatActivity(), MPVLib.EventObserver, TouchGesturesObse
         if (ev.action == MotionEvent.ACTION_DOWN)
             mightWantToToggleControls = true
         if (ev.action == MotionEvent.ACTION_UP && mightWantToToggleControls) {
-            toggleControls()
+            if (binding.controls.visibility == View.VISIBLE && !fadeRunnable.hasStarted) {
+                player.cyclePause()
+                showControls()
+            } else {
+                toggleControls()
+            }
         }
         return true
     }
@@ -1896,7 +1901,11 @@ class MPVActivity : AppCompatActivity(), MPVLib.EventObserver, TouchGesturesObse
     private fun eventPropertyUi(property: String, value: Boolean) {
         if (!activityIsForeground) return
         when (property) {
-            "pause" -> updatePlaybackStatus(value)
+            "pause" -> {
+                updatePlaybackStatus(value)
+                if (binding.controls.visibility == View.VISIBLE)
+                    showControls()
+            }
             "mute" -> { // indirectly from updateAudioPresence()
                 updateAudioUI()
             }
@@ -2137,7 +2146,7 @@ class MPVActivity : AppCompatActivity(), MPVLib.EventObserver, TouchGesturesObse
     companion object {
         private const val TAG = "mpv"
         // how long should controls be displayed on screen (ms)
-        private const val CONTROLS_DISPLAY_TIMEOUT = 1500L
+        private const val CONTROLS_DISPLAY_TIMEOUT = 2000L
         // how long controls fade to disappear (ms)
         private const val CONTROLS_FADE_DURATION = 500L
         // smallest aspect ratio that is considered non-square
