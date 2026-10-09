@@ -193,10 +193,10 @@ class MPVActivity : AppCompatActivity(), MPVLib.EventObserver, TouchGesturesObse
         with (binding) {
             prevBtn.setOnClickListener { playlistPrev() }
             nextBtn.setOnClickListener { playlistNext() }
-            cycleAudioBtn.setOnClickListener { cycleAudio() }
-            cycleSubsBtn.setOnClickListener { cycleSub() }
+            cycleAudioBtn.setOnClickListener { pickAudio() }
+            cycleSubsBtn.setOnClickListener { pickSub() }
             playBtn.setOnClickListener { player.cyclePause() }
-            cycleDecoderBtn.setOnClickListener { player.cycleHwdec() }
+            cycleDecoderBtn.setOnClickListener { pickDecoder() }
             cycleSpeedBtn.setOnClickListener { cycleSpeed() }
             topLockBtn.setOnClickListener { lockUI() }
             topPiPBtn.setOnClickListener { goIntoPiP() }
@@ -208,12 +208,11 @@ class MPVActivity : AppCompatActivity(), MPVLib.EventObserver, TouchGesturesObse
                 updatePlaybackDuration(psc.durationSec)
             }
 
-            cycleAudioBtn.setOnLongClickListener { pickAudio(); true }
+            cycleAudioBtn.setOnLongClickListener { pickAudioDelay(pauseForDialog()); true }
+            cycleSubsBtn.setOnLongClickListener { pickSubDelay(pauseForDialog()); true }
             cycleSpeedBtn.setOnLongClickListener { pickSpeed(); true }
-            cycleSubsBtn.setOnLongClickListener { pickSub(); true }
             prevBtn.setOnLongClickListener { openPlaylistMenu(pauseForDialog()); true }
             nextBtn.setOnLongClickListener { openPlaylistMenu(pauseForDialog()); true }
-            cycleDecoderBtn.setOnLongClickListener { pickDecoder(); true }
 
             playbackSeekbar.setOnSeekBarChangeListener(seekBarChangeListener)
         }
@@ -1319,6 +1318,31 @@ class MPVActivity : AppCompatActivity(), MPVLib.EventObserver, TouchGesturesObse
         }
     }
 
+    private fun pickAudioDelay(restoreState: StateRestoreCallback) {
+        val picker = DecimalPickerDialog(-600.0, 600.0)
+        genericPickerDialog(picker, R.string.audio_delay, "audio-delay", restoreState)
+    }
+
+    private fun pickSubDelay(restoreState: StateRestoreCallback) {
+        val picker = SubDelayDialog(-600.0, 600.0)
+        val dialog = with(AlertDialog.Builder(this)) {
+            setTitle(R.string.sub_delay)
+            val inflater = LayoutInflater.from(context)
+            setView(picker.buildView(inflater))
+            setPositiveButton(R.string.dialog_ok) { _, _ ->
+                picker.delay1?.let { player.subDelay = it }
+                picker.delay2?.let { player.secondarySubDelay = it }
+            }
+            setNegativeButton(R.string.dialog_cancel) { dialog, _ -> dialog.cancel() }
+            setOnDismissListener { restoreState() }
+            create()
+        }
+
+        picker.delay1 = player.subDelay ?: 0.0
+        picker.delay2 = if (player.secondarySid != -1) player.secondarySubDelay else null
+        dialog.show()
+    }
+
     private fun cycleSpeed() {
         player.cycleSpeed()
     }
@@ -1551,28 +1575,11 @@ class MPVActivity : AppCompatActivity(), MPVLib.EventObserver, TouchGesturesObse
 
         // audio / sub delay get a decimal picker
         buttons.add(MenuItem(R.id.audioDelayBtn) {
-            val picker = DecimalPickerDialog(-600.0, 600.0)
-            genericPickerDialog(picker, R.string.audio_delay, "audio-delay", restoreState)
+            pickAudioDelay(restoreState)
             false
         })
         buttons.add(MenuItem(R.id.subDelayBtn) {
-            val picker = SubDelayDialog(-600.0, 600.0)
-            val dialog = with(AlertDialog.Builder(this)) {
-                setTitle(R.string.sub_delay)
-                val inflater = LayoutInflater.from(context)
-                setView(picker.buildView(inflater))
-                setPositiveButton(R.string.dialog_ok) { _, _ ->
-                    picker.delay1?.let { player.subDelay = it }
-                    picker.delay2?.let { player.secondarySubDelay = it }
-                }
-                setNegativeButton(R.string.dialog_cancel) { dialog, _ -> dialog.cancel() }
-                setOnDismissListener { restoreState() }
-                create()
-            }
-
-            picker.delay1 = player.subDelay ?: 0.0
-            picker.delay2 = if (player.secondarySid != -1) player.secondarySubDelay else null
-            dialog.show()
+            pickSubDelay(restoreState)
             false
         })
 
