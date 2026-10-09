@@ -2127,7 +2127,7 @@ class MPVActivity : AppCompatActivity(), MPVLib.EventObserver, TouchGesturesObse
 
             /* Tap gestures */
             PropertyChange.SeekFixed -> {
-                val seekTime = diff * 10f
+                val seekTime = diff * 3f
                 val newPos = psc.positionSec + seekTime.toInt() // only for display
                 MPVLib.command(arrayOf("seek", seekTime.toString(), "relative"))
 
