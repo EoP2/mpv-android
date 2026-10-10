@@ -124,6 +124,19 @@
                     app:srcCompat="@drawable/ic_lock_24dp"
                     app:tint="@color/tint_normal" />
 
+                <Button
+                    android:id="@+id/cycleSpeedBtn"
+                    style="?buttonBarButtonStyle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="start|center_vertical"
+                    android:layout_marginStart="56dp"
+                    android:minWidth="48dp"
+                    android:minHeight="48dp"
+                    android:textColor="@android:color/white"
+                    android:textSize="14sp"
+                    tools:text="1.00X" />
+
                 <ImageButton
                     android:id="@+id/topPiPBtn"
                     style="?buttonBarButtonStyle"
@@ -232,17 +245,6 @@
                     tools:text="Video Title" />
 
             </LinearLayout>
-
-            <Button
-                android:id="@+id/cycleSpeedBtn"
-                style="?buttonBarButtonStyle"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:minWidth="48dp"
-                android:minHeight="40dp"
-                android:textColor="@android:color/white"
-                android:textSize="14sp"
-                tools:text="1.00X" />
 
             <Button
                 android:id="@+id/cycleDecoderBtn"
