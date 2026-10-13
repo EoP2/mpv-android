@@ -10,6 +10,7 @@ import androidx.appcompat.app.AlertDialog
 import android.app.PictureInPictureParams
 import android.app.RemoteAction
 import android.content.BroadcastReceiver
+import android.content.ContentProviderClient
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
@@ -82,6 +83,19 @@ class MPVActivity : AppCompatActivity(), MPVLib.EventObserver, TouchGesturesObse
 
     private val psc = Utils.PlaybackStateCache()
     private var mediaSession: MediaSessionCompat? = null
+
+    /**
+     * Connections to the content providers that serve the files being played, keyed by authority.
+     *
+     * ffmpeg opens content:// URIs by itself: it takes the raw fd with detachFd() and drops the
+     * ParcelFileDescriptor object, and the framework releases the provider connection only when that
+     * object gets finalized, i.e. at an arbitrary moment of the playback. A provider that serves the
+     * data from its own process (e.g. with StorageManager.openProxyFileDescriptor(), as file managers
+     * do for remote files) is then an ordinary cached process, which the system may freeze or throttle
+     * while this activity is in front: the packet queue stops growing and the playback starves.
+     * So keep a connection until we exit.
+     */
+    private val providerClients = mutableMapOf<String, ContentProviderClient>()
 
     private lateinit var binding: PlayerBinding
     private lateinit var gestures: TouchGestures
@@ -372,6 +386,7 @@ class MPVActivity : AppCompatActivity(), MPVLib.EventObserver, TouchGesturesObse
 
         player.removeObserver(this)
         player.destroy()
+        releaseProviders()
         super.onDestroy()
     }
 
@@ -1142,7 +1157,29 @@ class MPVActivity : AppCompatActivity(), MPVLib.EventObserver, TouchGesturesObse
         }
 
         // Otherwise, just let mpv open the content URI directly via ffmpeg
+        holdProvider(uri)
         return uri.toString()
+    }
+
+    private fun holdProvider(uri: Uri) {
+        val authority = uri.authority ?: return
+        if (providerClients.containsKey(authority))
+            return
+        try {
+            // an unstable reference is enough to keep the provider's process at our priority
+            // and does not get us killed if the provider's process dies
+            applicationContext.contentResolver.acquireUnstableContentProviderClient(uri)?.let {
+                providerClients[authority] = it
+            }
+        } catch (e: Exception) {
+            Log.w(TAG, "Failed to hold the content provider: $e")
+        }
+    }
+
+    @Suppress("DEPRECATION") // ContentProviderClient.close() needs API 24
+    private fun releaseProviders() {
+        providerClients.values.forEach { it.release() }
+        providerClients.clear()
     }
 
     private fun parseIntentExtras(extras: Bundle?) {
