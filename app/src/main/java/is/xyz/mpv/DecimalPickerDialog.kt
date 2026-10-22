@@ -11,6 +11,12 @@ internal class DecimalPickerDialog(
 ) : PickerDialog {
     private lateinit var binding: DialogDecimalBinding
 
+    /**
+     * Called whenever the value changes to a valid, in-range number (+/- buttons, typing, reset).
+     * Assign this *after* setting the initial [number], so the initial value isn't reported back.
+     */
+    var onNumberChanged: ((Double) -> Unit)? = null
+
     override fun buildView(layoutInflater: LayoutInflater): View {
         binding = DialogDecimalBinding.inflate(layoutInflater)
 
@@ -27,12 +33,14 @@ internal class DecimalPickerDialog(
                 val value = s!!.toString().toDoubleOrNull() ?: return
                 val valueBounded = value.coerceIn(rangeMin, rangeMax)
                 if (valueBounded != value)
-                    binding.editText.setText(valueBounded.toString())
+                    binding.editText.setText(valueBounded.toString()) // re-enters with the bounded value
+                else
+                    onNumberChanged?.invoke(value)
             }
         })
         val onClick = { delta: Double ->
             val value = this.number ?: 0.0
-            this.number = (value + delta).coerceIn(rangeMin, rangeMax)
+            this.number = roundToMs(value + delta).coerceIn(rangeMin, rangeMax)
         }
         binding.btnMinus.setOnClickListener { onClick(-STEP) }
         binding.btnPlus.setOnClickListener { onClick(STEP) }
@@ -47,6 +55,10 @@ internal class DecimalPickerDialog(
         get() = binding.editText.text.toString().toDoubleOrNull()
 
     companion object {
-        private const val STEP = 1.0
+        private const val STEP = 0.1
+
+        // 0.1 can't be represented exactly, so repeated additions drift (0.1 + 0.2 = 0.30000000000000004).
+        // Rounding to milliseconds keeps the displayed value clean.
+        private fun roundToMs(v: Double) = Math.round(v * 1000.0) / 1000.0
     }
 }

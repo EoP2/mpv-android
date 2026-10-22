@@ -12,6 +12,7 @@ import android.app.RemoteAction
 import android.content.BroadcastReceiver
 import android.content.ContentProviderClient
 import android.content.Context
+import android.content.DialogInterface
 import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.ActivityInfo
@@ -1355,9 +1356,26 @@ class MPVActivity : AppCompatActivity(), MPVLib.EventObserver, TouchGesturesObse
         }
     }
 
+    // The audio / subtitle delay dialogs apply every change immediately and only have
+    // "Reset" (back to 0, dialog stays open) and "Close" buttons.
+
     private fun pickAudioDelay(restoreState: StateRestoreCallback) {
         val picker = DecimalPickerDialog(-600.0, 600.0)
-        genericPickerDialog(picker, R.string.audio_delay, "audio-delay", restoreState)
+        val dialog = with(AlertDialog.Builder(this)) {
+            setTitle(R.string.audio_delay)
+            val inflater = LayoutInflater.from(context)
+            setView(picker.buildView(inflater))
+            // the click listener of "Reset" is replaced after show(), otherwise it would dismiss the dialog
+            setNeutralButton(R.string.dialog_reset, null)
+            setPositiveButton(R.string.dialog_close, null)
+            setOnDismissListener { restoreState() }
+            create()
+        }
+
+        picker.number = MPVLib.getPropertyDouble("audio-delay") ?: 0.0
+        picker.onNumberChanged = { MPVLib.setPropertyDouble("audio-delay", it) }
+        dialog.show()
+        dialog.getButton(DialogInterface.BUTTON_NEUTRAL).setOnClickListener { picker.number = 0.0 }
     }
 
     private fun pickSubDelay(restoreState: StateRestoreCallback) {
@@ -1366,18 +1384,24 @@ class MPVActivity : AppCompatActivity(), MPVLib.EventObserver, TouchGesturesObse
             setTitle(R.string.sub_delay)
             val inflater = LayoutInflater.from(context)
             setView(picker.buildView(inflater))
-            setPositiveButton(R.string.dialog_ok) { _, _ ->
-                picker.delay1?.let { player.subDelay = it }
-                picker.delay2?.let { player.secondarySubDelay = it }
-            }
-            setNegativeButton(R.string.dialog_cancel) { dialog, _ -> dialog.cancel() }
+            // the click listener of "Reset" is replaced after show(), otherwise it would dismiss the dialog
+            setNeutralButton(R.string.dialog_reset, null)
+            setPositiveButton(R.string.dialog_close, null)
             setOnDismissListener { restoreState() }
             create()
         }
 
         picker.delay1 = player.subDelay ?: 0.0
         picker.delay2 = if (player.secondarySid != -1) player.secondarySubDelay else null
+        val hasSecondary = picker.delay2 != null // the secondary row is hidden otherwise
+        picker.onDelay1Changed = { player.subDelay = it }
+        picker.onDelay2Changed = { player.secondarySubDelay = it }
         dialog.show()
+        dialog.getButton(DialogInterface.BUTTON_NEUTRAL).setOnClickListener {
+            picker.delay1 = 0.0
+            if (hasSecondary)
+                picker.delay2 = 0.0
+        }
     }
 
     private fun cycleSpeed() {
