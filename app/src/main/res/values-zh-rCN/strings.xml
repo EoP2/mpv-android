@@ -27,6 +27,8 @@
     <string name="ui_seek_distance">%1$s\n[%2$s]</string>
     <string name="ui_fps">%.3f FPS</string>
     <string name="ui_speed">%.2fx</string>
+    <string name="ui_zoom">%d%%</string>
+    <string name="ui_zoom_fit">适应屏幕</string>
     <string name="ui_chapter_fallback">章节 %1$d (%2$s)</string>
     <string name="ui_chapter">%1$s (%2$s)</string>
     <string name="ui_track">#%d</string>
