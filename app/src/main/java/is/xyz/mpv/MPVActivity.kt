@@ -213,6 +213,7 @@ class MPVActivity : AppCompatActivity(), MPVLib.EventObserver, TouchGesturesObse
             playBtn.setOnClickListener { player.cyclePause() }
             cycleDecoderBtn.setOnClickListener { pickDecoder() }
             cycleSpeedBtn.setOnClickListener { cycleSpeed() }
+            zoomBtn.setOnClickListener { toggleZoom() }
             topLockBtn.setOnClickListener { lockUI() }
             topPiPBtn.setOnClickListener { goIntoPiP() }
             topMenuBtn.setOnClickListener { openTopMenu() }
@@ -226,6 +227,7 @@ class MPVActivity : AppCompatActivity(), MPVLib.EventObserver, TouchGesturesObse
             cycleAudioBtn.setOnLongClickListener { pickAudioDelay(pauseForDialog()); true }
             cycleSubsBtn.setOnLongClickListener { pickSubDelay(pauseForDialog()); true }
             cycleSpeedBtn.setOnLongClickListener { pickSpeed(); true }
+            zoomBtn.setOnLongClickListener { pickZoom(); true }
             prevBtn.setOnLongClickListener { openPlaylistMenu(pauseForDialog()); true }
             nextBtn.setOnLongClickListener { openPlaylistMenu(pauseForDialog()); true }
 
@@ -871,7 +873,8 @@ class MPVActivity : AppCompatActivity(), MPVLib.EventObserver, TouchGesturesObse
      */
     private fun dpadButtons(): Sequence<View> {
         val groups = arrayOf<ViewGroup>(
-            binding.controlsButtonGroup, binding.controlsButtonRow, binding.topControls)
+            binding.controlsButtonGroup, binding.controlsButtonRow, binding.controlsEndGroup,
+            binding.topControls)
         return sequence {
             for (g in groups) {
                 for (i in 0 until g.childCount) {
@@ -1038,14 +1041,24 @@ class MPVActivity : AppCompatActivity(), MPVLib.EventObserver, TouchGesturesObse
         }
     }
 
+    /** video scale to bring back after leaving PiP, null if there is nothing to restore */
+    private var scaleBeforePiP: Double? = null
+
     private fun onPiPModeChangedImpl(state: Boolean) {
         Log.v(TAG, "onPiPModeChanged($state)")
         if (state) {
             lockedUI = true
             hideControls()
+            // a video shown at its native size would only fill the tiny PiP window with a cut-out
+            player.videoScale?.let {
+                scaleBeforePiP = it
+                player.videoScale = null
+            }
             return
         }
 
+        scaleBeforePiP?.let { player.videoScale = it }
+        scaleBeforePiP = null
         unlockUI()
         // For whatever stupid reason Android provides no good detection for when PiP is exited
         // so we have to do this shit <https://stackoverflow.com/questions/43174507/#answer-56127742>
@@ -1418,6 +1431,26 @@ class MPVActivity : AppCompatActivity(), MPVLib.EventObserver, TouchGesturesObse
         }
     }
 
+    /** fit screen -> 100%, anything else -> back to fit screen */
+    private fun toggleZoom() {
+        player.videoScale = if (player.videoScale == null) 1.0 else null
+    }
+
+    private fun pickZoom() {
+        val restore = pauseForDialog()
+
+        val current = zoomPercent(player.videoScale)
+        val selectedIndex = ZOOM_PRESETS.indexOfFirst { zoomPercent(it) == current }
+        with (AlertDialog.Builder(this)) {
+            setSingleChoiceItems(ZOOM_PRESETS.map { zoomLabel(it) }.toTypedArray(), selectedIndex) { dialog, idx ->
+                player.videoScale = ZOOM_PRESETS[idx]
+                dialog.dismiss()
+            }
+            setOnDismissListener { restore() }
+            create().show()
+        }
+    }
+
     private fun goIntoPiP() {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N)
             return
@@ -1695,6 +1728,7 @@ class MPVActivity : AppCompatActivity(), MPVLib.EventObserver, TouchGesturesObse
         updateMetadataDisplay()
         updateDecoderButton()
         updateSpeedButton()
+        updateZoomButton()
         updatePlaylistButtons()
         player.loadTracks()
     }
@@ -1702,7 +1736,7 @@ class MPVActivity : AppCompatActivity(), MPVLib.EventObserver, TouchGesturesObse
     private fun updateAudioUI() {
         val audioButtons = arrayOf(R.id.prevBtn, R.id.playBtn, R.id.nextBtn)
         val videoButtons = arrayOf(R.id.playBtn)
-        val videoOnlyTopButtons = arrayOf<View>(binding.cycleSubsBtn, binding.cycleDecoderBtn)
+        val videoOnlyTopButtons = arrayOf<View>(binding.cycleSubsBtn, binding.cycleDecoderBtn, binding.zoomBtn)
 
         val shouldUseAudioUI = isPlayingAudioOnly()
         if (shouldUseAudioUI == useAudioUI)
@@ -1815,6 +1849,18 @@ class MPVActivity : AppCompatActivity(), MPVLib.EventObserver, TouchGesturesObse
 
     private fun updateSpeedButton() {
         binding.cycleSpeedBtn.text = getString(R.string.ui_speed, psc.speed)
+    }
+
+    /** @return the scale as percentage of the native video size, null if fitted to the screen */
+    private fun zoomPercent(scale: Double?): Int? = scale?.let { (it * 100).roundToInt() }
+
+    private fun zoomLabel(scale: Double?): String {
+        val percent = zoomPercent(scale) ?: return getString(R.string.ui_zoom_fit)
+        return getString(R.string.ui_zoom, percent)
+    }
+
+    private fun updateZoomButton() {
+        binding.zoomBtn.text = zoomLabel(player.videoScale)
     }
 
     private fun updatePlaylistButtons() {
@@ -1998,6 +2044,7 @@ class MPVActivity : AppCompatActivity(), MPVLib.EventObserver, TouchGesturesObse
                 updateOrientation()
                 updatePiPParams()
             }
+            "video-zoom" -> updateZoomButton()
         }
     }
 
@@ -2005,6 +2052,7 @@ class MPVActivity : AppCompatActivity(), MPVLib.EventObserver, TouchGesturesObse
         if (!activityIsForeground) return
         when (property) {
             "speed" -> updateSpeedButton()
+            "video-unscaled" -> updateZoomButton()
         }
         if (metaUpdated)
             updateMetadataDisplay()
@@ -2233,5 +2281,7 @@ class MPVActivity : AppCompatActivity(), MPVLib.EventObserver, TouchGesturesObse
         private const val STREAM_TYPE = AudioManager.STREAM_MUSIC
         // precision used by seekbar (1/s)
         private const val SEEK_BAR_PRECISION = 2
+        // choices of the zoom dialog: null is "fit screen", else scale relative to the native video size
+        private val ZOOM_PRESETS = arrayOf<Double?>(null, 1.0, 1.5, 2.0)
     }
 }

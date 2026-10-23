@@ -13,6 +13,8 @@ import `is`.xyz.mpv.MPVLib.MpvFormat.MPV_FORMAT_FLAG
 import `is`.xyz.mpv.MPVLib.MpvFormat.MPV_FORMAT_INT64
 import `is`.xyz.mpv.MPVLib.MpvFormat.MPV_FORMAT_NONE
 import `is`.xyz.mpv.MPVLib.MpvFormat.MPV_FORMAT_STRING
+import kotlin.math.log2
+import kotlin.math.pow
 import kotlin.reflect.KProperty
 
 internal class MPVView(context: Context, attrs: AttributeSet) : BaseMPVView(context, attrs) {
@@ -182,6 +184,8 @@ internal class MPVView(context: Context, attrs: AttributeSet) : BaseMPVView(cont
             Property("pause", MPV_FORMAT_FLAG),
             Property("paused-for-cache", MPV_FORMAT_FLAG),
             Property("speed", MPV_FORMAT_STRING),
+            Property("video-unscaled", MPV_FORMAT_STRING),
+            Property("video-zoom", MPV_FORMAT_DOUBLE),
             Property("track-list"),
             Property("video-params/aspect", MPV_FORMAT_DOUBLE),
             Property("video-params/rotate", MPV_FORMAT_DOUBLE),
@@ -294,6 +298,29 @@ internal class MPVView(context: Context, attrs: AttributeSet) : BaseMPVView(cont
     var playbackSpeed: Double?
         get() = MPVLib.getPropertyDouble("speed")
         set(speed) = MPVLib.setPropertyDouble("speed", speed!!)
+
+    /**
+     * Video scale relative to the native size of the video (1.0 = 100%),
+     * or null if the video is fitted to the screen.
+     *
+     * Implemented with `video-unscaled` (makes the native size the base size) and
+     * `video-zoom` (a log2 factor applied on top of that base size).
+     */
+    var videoScale: Double?
+        get() {
+            if ((MPVLib.getPropertyString("video-unscaled") ?: "no") == "no")
+                return null
+            return 2.0.pow(MPVLib.getPropertyDouble("video-zoom") ?: 0.0)
+        }
+        set(scale) {
+            if (scale == null) {
+                MPVLib.setPropertyString("video-unscaled", "no")
+                MPVLib.setPropertyDouble("video-zoom", 0.0)
+            } else {
+                MPVLib.setPropertyString("video-unscaled", "yes")
+                MPVLib.setPropertyDouble("video-zoom", log2(scale))
+            }
+        }
 
     var subDelay: Double?
         get() = MPVLib.getPropertyDouble("sub-delay")
